@@ -73,6 +73,10 @@ func (a *arkesel) Dispatch(payload []byte) {
 func (a *arkesel) formatRecipients(recipients []string) []string {
 	var reps []string
 	for _, recipient := range recipients {
+		if strings.HasPrefix(recipient, "0") && len(recipient) == 10 {
+			reps = append(reps, "233"+strings.Join(strings.Split(recipient, "")[1:], ""))
+			continue
+		}
 		reps = append(reps, strings.Join(strings.Split(recipient, "")[1:], ""))
 	}
 	return reps
