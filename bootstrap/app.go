@@ -11,10 +11,10 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	"github.com/SeyramWood/app/consumer"
-	"github.com/SeyramWood/app/database"
-	"github.com/SeyramWood/config"
-	"github.com/SeyramWood/utils/env"
+	"github.com/SeyramWood/bookibus/app/consumer"
+	"github.com/SeyramWood/bookibus/app/database"
+	"github.com/SeyramWood/bookibus/config"
+	"github.com/SeyramWood/bookibus/utils/env"
 )
 
 func init() {

@@ -6,9 +6,9 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	"github.com/SeyramWood/app/adapters/gateways"
-	"github.com/SeyramWood/app/database"
-	"github.com/SeyramWood/app/notification"
+	"github.com/SeyramWood/bookibus/app/adapters/gateways"
+	"github.com/SeyramWood/bookibus/app/database"
+	"github.com/SeyramWood/bookibus/app/notification"
 )
 
 type consumer struct {

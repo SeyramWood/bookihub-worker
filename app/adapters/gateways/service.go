@@ -1,6 +1,6 @@
 package gateways
 
-import "github.com/SeyramWood/app/database"
+import "github.com/SeyramWood/bookibus/app/database"
 
 type (
 	EventConsumer interface {

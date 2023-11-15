@@ -1,4 +1,4 @@
-module github.com/SeyramWood
+module github.com/SeyramWood/bookibus
 
 go 1.20
 

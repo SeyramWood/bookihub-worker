@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SeyramWood/app/adapters/gateways"
-	"github.com/SeyramWood/config"
+	"github.com/SeyramWood/bookibus/app/adapters/gateways"
+	"github.com/SeyramWood/bookibus/config"
 )
 
 type (
