@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/SeyramWood/bookibus/ent/company"
+	"github.com/SeyramWood/bookibus/ent/schema"
 )
 
 // Company is the model entity for the Company schema.
@@ -25,10 +27,16 @@ type Company struct {
 	Name string `json:"name,omitempty"`
 	// Phone holds the value of the "phone" field.
 	Phone string `json:"phone,omitempty"`
-	// OtherPhone holds the value of the "other_phone" field.
-	OtherPhone string `json:"other_phone,omitempty"`
 	// Email holds the value of the "email" field.
 	Email string `json:"email,omitempty"`
+	// Certificate holds the value of the "certificate" field.
+	Certificate string `json:"certificate,omitempty"`
+	// BankAccount holds the value of the "bank_account" field.
+	BankAccount *schema.BankAccount `json:"bank_account,omitempty"`
+	// ContactPerson holds the value of the "contact_person" field.
+	ContactPerson *schema.ContactPerson `json:"contact_person,omitempty"`
+	// OnboardingStatus holds the value of the "onboarding_status" field.
+	OnboardingStatus company.OnboardingStatus `json:"onboarding_status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CompanyQuery when eager-loading is set.
 	Edges        CompanyEdges `json:"edges"`
@@ -53,11 +61,13 @@ type CompanyEdges struct {
 	Incidents []*Incident `json:"incidents,omitempty"`
 	// Parcels holds the value of the parcels edge.
 	Parcels []*Parcel `json:"parcels,omitempty"`
+	// Transactions holds the value of the transactions edge.
+	Transactions []*Transaction `json:"transactions,omitempty"`
 	// Notifications holds the value of the notifications edge.
 	Notifications []*Notification `json:"notifications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 }
 
 // ProfileOrErr returns the Profile value or an error if the edge
@@ -132,10 +142,19 @@ func (e CompanyEdges) ParcelsOrErr() ([]*Parcel, error) {
 	return nil, &NotLoadedError{edge: "parcels"}
 }
 
+// TransactionsOrErr returns the Transactions value or an error if the edge
+// was not loaded in eager-loading.
+func (e CompanyEdges) TransactionsOrErr() ([]*Transaction, error) {
+	if e.loadedTypes[8] {
+		return e.Transactions, nil
+	}
+	return nil, &NotLoadedError{edge: "transactions"}
+}
+
 // NotificationsOrErr returns the Notifications value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) NotificationsOrErr() ([]*Notification, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.Notifications, nil
 	}
 	return nil, &NotLoadedError{edge: "notifications"}
@@ -146,9 +165,11 @@ func (*Company) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case company.FieldBankAccount, company.FieldContactPerson:
+			values[i] = new([]byte)
 		case company.FieldID:
 			values[i] = new(sql.NullInt64)
-		case company.FieldName, company.FieldPhone, company.FieldOtherPhone, company.FieldEmail:
+		case company.FieldName, company.FieldPhone, company.FieldEmail, company.FieldCertificate, company.FieldOnboardingStatus:
 			values[i] = new(sql.NullString)
 		case company.FieldCreatedAt, company.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -197,17 +218,39 @@ func (c *Company) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.Phone = value.String
 			}
-		case company.FieldOtherPhone:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field other_phone", values[i])
-			} else if value.Valid {
-				c.OtherPhone = value.String
-			}
 		case company.FieldEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
 				c.Email = value.String
+			}
+		case company.FieldCertificate:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field certificate", values[i])
+			} else if value.Valid {
+				c.Certificate = value.String
+			}
+		case company.FieldBankAccount:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field bank_account", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &c.BankAccount); err != nil {
+					return fmt.Errorf("unmarshal field bank_account: %w", err)
+				}
+			}
+		case company.FieldContactPerson:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field contact_person", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &c.ContactPerson); err != nil {
+					return fmt.Errorf("unmarshal field contact_person: %w", err)
+				}
+			}
+		case company.FieldOnboardingStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field onboarding_status", values[i])
+			} else if value.Valid {
+				c.OnboardingStatus = company.OnboardingStatus(value.String)
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
@@ -262,6 +305,11 @@ func (c *Company) QueryParcels() *ParcelQuery {
 	return NewCompanyClient(c.config).QueryParcels(c)
 }
 
+// QueryTransactions queries the "transactions" edge of the Company entity.
+func (c *Company) QueryTransactions() *TransactionQuery {
+	return NewCompanyClient(c.config).QueryTransactions(c)
+}
+
 // QueryNotifications queries the "notifications" edge of the Company entity.
 func (c *Company) QueryNotifications() *NotificationQuery {
 	return NewCompanyClient(c.config).QueryNotifications(c)
@@ -302,11 +350,20 @@ func (c *Company) String() string {
 	builder.WriteString("phone=")
 	builder.WriteString(c.Phone)
 	builder.WriteString(", ")
-	builder.WriteString("other_phone=")
-	builder.WriteString(c.OtherPhone)
-	builder.WriteString(", ")
 	builder.WriteString("email=")
 	builder.WriteString(c.Email)
+	builder.WriteString(", ")
+	builder.WriteString("certificate=")
+	builder.WriteString(c.Certificate)
+	builder.WriteString(", ")
+	builder.WriteString("bank_account=")
+	builder.WriteString(fmt.Sprintf("%v", c.BankAccount))
+	builder.WriteString(", ")
+	builder.WriteString("contact_person=")
+	builder.WriteString(fmt.Sprintf("%v", c.ContactPerson))
+	builder.WriteString(", ")
+	builder.WriteString("onboarding_status=")
+	builder.WriteString(fmt.Sprintf("%v", c.OnboardingStatus))
 	builder.WriteByte(')')
 	return builder.String()
 }

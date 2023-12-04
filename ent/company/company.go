@@ -3,6 +3,7 @@
 package company
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -22,10 +23,16 @@ const (
 	FieldName = "name"
 	// FieldPhone holds the string denoting the phone field in the database.
 	FieldPhone = "phone"
-	// FieldOtherPhone holds the string denoting the other_phone field in the database.
-	FieldOtherPhone = "other_phone"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
+	// FieldCertificate holds the string denoting the certificate field in the database.
+	FieldCertificate = "certificate"
+	// FieldBankAccount holds the string denoting the bank_account field in the database.
+	FieldBankAccount = "bank_account"
+	// FieldContactPerson holds the string denoting the contact_person field in the database.
+	FieldContactPerson = "contact_person"
+	// FieldOnboardingStatus holds the string denoting the onboarding_status field in the database.
+	FieldOnboardingStatus = "onboarding_status"
 	// EdgeProfile holds the string denoting the profile edge name in mutations.
 	EdgeProfile = "profile"
 	// EdgeTerminals holds the string denoting the terminals edge name in mutations.
@@ -42,6 +49,8 @@ const (
 	EdgeIncidents = "incidents"
 	// EdgeParcels holds the string denoting the parcels edge name in mutations.
 	EdgeParcels = "parcels"
+	// EdgeTransactions holds the string denoting the transactions edge name in mutations.
+	EdgeTransactions = "transactions"
 	// EdgeNotifications holds the string denoting the notifications edge name in mutations.
 	EdgeNotifications = "notifications"
 	// Table holds the table name of the company in the database.
@@ -102,6 +111,13 @@ const (
 	ParcelsInverseTable = "parcels"
 	// ParcelsColumn is the table column denoting the parcels relation/edge.
 	ParcelsColumn = "company_parcels"
+	// TransactionsTable is the table that holds the transactions relation/edge.
+	TransactionsTable = "transactions"
+	// TransactionsInverseTable is the table name for the Transaction entity.
+	// It exists in this package in order to avoid circular dependency with the "transaction" package.
+	TransactionsInverseTable = "transactions"
+	// TransactionsColumn is the table column denoting the transactions relation/edge.
+	TransactionsColumn = "company_transactions"
 	// NotificationsTable is the table that holds the notifications relation/edge.
 	NotificationsTable = "notifications"
 	// NotificationsInverseTable is the table name for the Notification entity.
@@ -118,8 +134,11 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldPhone,
-	FieldOtherPhone,
 	FieldEmail,
+	FieldCertificate,
+	FieldBankAccount,
+	FieldContactPerson,
+	FieldOnboardingStatus,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -146,6 +165,33 @@ var (
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
 )
+
+// OnboardingStatus defines the type for the "onboarding_status" enum field.
+type OnboardingStatus string
+
+// OnboardingStatusPending is the default value of the OnboardingStatus enum.
+const DefaultOnboardingStatus = OnboardingStatusPending
+
+// OnboardingStatus values.
+const (
+	OnboardingStatusPending  OnboardingStatus = "pending"
+	OnboardingStatusApproved OnboardingStatus = "approved"
+	OnboardingStatusRejected OnboardingStatus = "rejected"
+)
+
+func (os OnboardingStatus) String() string {
+	return string(os)
+}
+
+// OnboardingStatusValidator is a validator for the "onboarding_status" field enum values. It is called by the builders before save.
+func OnboardingStatusValidator(os OnboardingStatus) error {
+	switch os {
+	case OnboardingStatusPending, OnboardingStatusApproved, OnboardingStatusRejected:
+		return nil
+	default:
+		return fmt.Errorf("company: invalid enum value for onboarding_status field: %q", os)
+	}
+}
 
 // OrderOption defines the ordering options for the Company queries.
 type OrderOption func(*sql.Selector)
@@ -175,14 +221,19 @@ func ByPhone(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhone, opts...).ToFunc()
 }
 
-// ByOtherPhone orders the results by the other_phone field.
-func ByOtherPhone(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOtherPhone, opts...).ToFunc()
-}
-
 // ByEmail orders the results by the email field.
 func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
+// ByCertificate orders the results by the certificate field.
+func ByCertificate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCertificate, opts...).ToFunc()
+}
+
+// ByOnboardingStatus orders the results by the onboarding_status field.
+func ByOnboardingStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOnboardingStatus, opts...).ToFunc()
 }
 
 // ByProfileCount orders the results by profile count.
@@ -297,6 +348,20 @@ func ByParcels(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByTransactionsCount orders the results by transactions count.
+func ByTransactionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTransactionsStep(), opts...)
+	}
+}
+
+// ByTransactions orders the results by transactions terms.
+func ByTransactions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTransactionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNotificationsCount orders the results by notifications count.
 func ByNotificationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -364,6 +429,13 @@ func newParcelsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ParcelsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ParcelsTable, ParcelsColumn),
+	)
+}
+func newTransactionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TransactionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TransactionsTable, TransactionsColumn),
 	)
 }
 func newNotificationsStep() *sqlgraph.Step {

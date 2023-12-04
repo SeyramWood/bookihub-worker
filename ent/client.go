@@ -19,6 +19,7 @@ import (
 	"github.com/SeyramWood/bookibus/ent/booking"
 	"github.com/SeyramWood/bookibus/ent/company"
 	"github.com/SeyramWood/bookibus/ent/companyuser"
+	"github.com/SeyramWood/bookibus/ent/configuration"
 	"github.com/SeyramWood/bookibus/ent/customer"
 	"github.com/SeyramWood/bookibus/ent/customercontact"
 	"github.com/SeyramWood/bookibus/ent/customerluggage"
@@ -28,9 +29,11 @@ import (
 	"github.com/SeyramWood/bookibus/ent/parcel"
 	"github.com/SeyramWood/bookibus/ent/parcelimage"
 	"github.com/SeyramWood/bookibus/ent/passenger"
+	"github.com/SeyramWood/bookibus/ent/payout"
 	"github.com/SeyramWood/bookibus/ent/route"
 	"github.com/SeyramWood/bookibus/ent/routestop"
 	"github.com/SeyramWood/bookibus/ent/terminal"
+	"github.com/SeyramWood/bookibus/ent/transaction"
 	"github.com/SeyramWood/bookibus/ent/trip"
 	"github.com/SeyramWood/bookibus/ent/user"
 	"github.com/SeyramWood/bookibus/ent/vehicle"
@@ -50,6 +53,8 @@ type Client struct {
 	Company *CompanyClient
 	// CompanyUser is the client for interacting with the CompanyUser builders.
 	CompanyUser *CompanyUserClient
+	// Configuration is the client for interacting with the Configuration builders.
+	Configuration *ConfigurationClient
 	// Customer is the client for interacting with the Customer builders.
 	Customer *CustomerClient
 	// CustomerContact is the client for interacting with the CustomerContact builders.
@@ -68,12 +73,16 @@ type Client struct {
 	ParcelImage *ParcelImageClient
 	// Passenger is the client for interacting with the Passenger builders.
 	Passenger *PassengerClient
+	// Payout is the client for interacting with the Payout builders.
+	Payout *PayoutClient
 	// Route is the client for interacting with the Route builders.
 	Route *RouteClient
 	// RouteStop is the client for interacting with the RouteStop builders.
 	RouteStop *RouteStopClient
 	// Terminal is the client for interacting with the Terminal builders.
 	Terminal *TerminalClient
+	// Transaction is the client for interacting with the Transaction builders.
+	Transaction *TransactionClient
 	// Trip is the client for interacting with the Trip builders.
 	Trip *TripClient
 	// User is the client for interacting with the User builders.
@@ -99,6 +108,7 @@ func (c *Client) init() {
 	c.Booking = NewBookingClient(c.config)
 	c.Company = NewCompanyClient(c.config)
 	c.CompanyUser = NewCompanyUserClient(c.config)
+	c.Configuration = NewConfigurationClient(c.config)
 	c.Customer = NewCustomerClient(c.config)
 	c.CustomerContact = NewCustomerContactClient(c.config)
 	c.CustomerLuggage = NewCustomerLuggageClient(c.config)
@@ -108,9 +118,11 @@ func (c *Client) init() {
 	c.Parcel = NewParcelClient(c.config)
 	c.ParcelImage = NewParcelImageClient(c.config)
 	c.Passenger = NewPassengerClient(c.config)
+	c.Payout = NewPayoutClient(c.config)
 	c.Route = NewRouteClient(c.config)
 	c.RouteStop = NewRouteStopClient(c.config)
 	c.Terminal = NewTerminalClient(c.config)
+	c.Transaction = NewTransactionClient(c.config)
 	c.Trip = NewTripClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.Vehicle = NewVehicleClient(c.config)
@@ -204,6 +216,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Booking:         NewBookingClient(cfg),
 		Company:         NewCompanyClient(cfg),
 		CompanyUser:     NewCompanyUserClient(cfg),
+		Configuration:   NewConfigurationClient(cfg),
 		Customer:        NewCustomerClient(cfg),
 		CustomerContact: NewCustomerContactClient(cfg),
 		CustomerLuggage: NewCustomerLuggageClient(cfg),
@@ -213,9 +226,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Parcel:          NewParcelClient(cfg),
 		ParcelImage:     NewParcelImageClient(cfg),
 		Passenger:       NewPassengerClient(cfg),
+		Payout:          NewPayoutClient(cfg),
 		Route:           NewRouteClient(cfg),
 		RouteStop:       NewRouteStopClient(cfg),
 		Terminal:        NewTerminalClient(cfg),
+		Transaction:     NewTransactionClient(cfg),
 		Trip:            NewTripClient(cfg),
 		User:            NewUserClient(cfg),
 		Vehicle:         NewVehicleClient(cfg),
@@ -243,6 +258,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Booking:         NewBookingClient(cfg),
 		Company:         NewCompanyClient(cfg),
 		CompanyUser:     NewCompanyUserClient(cfg),
+		Configuration:   NewConfigurationClient(cfg),
 		Customer:        NewCustomerClient(cfg),
 		CustomerContact: NewCustomerContactClient(cfg),
 		CustomerLuggage: NewCustomerLuggageClient(cfg),
@@ -252,9 +268,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Parcel:          NewParcelClient(cfg),
 		ParcelImage:     NewParcelImageClient(cfg),
 		Passenger:       NewPassengerClient(cfg),
+		Payout:          NewPayoutClient(cfg),
 		Route:           NewRouteClient(cfg),
 		RouteStop:       NewRouteStopClient(cfg),
 		Terminal:        NewTerminalClient(cfg),
+		Transaction:     NewTransactionClient(cfg),
 		Trip:            NewTripClient(cfg),
 		User:            NewUserClient(cfg),
 		Vehicle:         NewVehicleClient(cfg),
@@ -288,10 +306,11 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.BookibusUser, c.Booking, c.Company, c.CompanyUser, c.Customer,
-		c.CustomerContact, c.CustomerLuggage, c.Incident, c.IncidentImage,
-		c.Notification, c.Parcel, c.ParcelImage, c.Passenger, c.Route, c.RouteStop,
-		c.Terminal, c.Trip, c.User, c.Vehicle, c.VehicleImage,
+		c.BookibusUser, c.Booking, c.Company, c.CompanyUser, c.Configuration,
+		c.Customer, c.CustomerContact, c.CustomerLuggage, c.Incident, c.IncidentImage,
+		c.Notification, c.Parcel, c.ParcelImage, c.Passenger, c.Payout, c.Route,
+		c.RouteStop, c.Terminal, c.Transaction, c.Trip, c.User, c.Vehicle,
+		c.VehicleImage,
 	} {
 		n.Use(hooks...)
 	}
@@ -301,10 +320,11 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.BookibusUser, c.Booking, c.Company, c.CompanyUser, c.Customer,
-		c.CustomerContact, c.CustomerLuggage, c.Incident, c.IncidentImage,
-		c.Notification, c.Parcel, c.ParcelImage, c.Passenger, c.Route, c.RouteStop,
-		c.Terminal, c.Trip, c.User, c.Vehicle, c.VehicleImage,
+		c.BookibusUser, c.Booking, c.Company, c.CompanyUser, c.Configuration,
+		c.Customer, c.CustomerContact, c.CustomerLuggage, c.Incident, c.IncidentImage,
+		c.Notification, c.Parcel, c.ParcelImage, c.Passenger, c.Payout, c.Route,
+		c.RouteStop, c.Terminal, c.Transaction, c.Trip, c.User, c.Vehicle,
+		c.VehicleImage,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -321,6 +341,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Company.mutate(ctx, m)
 	case *CompanyUserMutation:
 		return c.CompanyUser.mutate(ctx, m)
+	case *ConfigurationMutation:
+		return c.Configuration.mutate(ctx, m)
 	case *CustomerMutation:
 		return c.Customer.mutate(ctx, m)
 	case *CustomerContactMutation:
@@ -339,12 +361,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ParcelImage.mutate(ctx, m)
 	case *PassengerMutation:
 		return c.Passenger.mutate(ctx, m)
+	case *PayoutMutation:
+		return c.Payout.mutate(ctx, m)
 	case *RouteMutation:
 		return c.Route.mutate(ctx, m)
 	case *RouteStopMutation:
 		return c.RouteStop.mutate(ctx, m)
 	case *TerminalMutation:
 		return c.Terminal.mutate(ctx, m)
+	case *TransactionMutation:
+		return c.Transaction.mutate(ctx, m)
 	case *TripMutation:
 		return c.Trip.mutate(ctx, m)
 	case *UserMutation:
@@ -679,6 +705,22 @@ func (c *BookingClient) QueryContact(b *Booking) *CustomerContactQuery {
 	return query
 }
 
+// QueryTransaction queries the transaction edge of a Booking.
+func (c *BookingClient) QueryTransaction(b *Booking) *TransactionQuery {
+	query := (&TransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(booking.Table, booking.FieldID, id),
+			sqlgraph.To(transaction.Table, transaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, booking.TransactionTable, booking.TransactionColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryTrip queries the trip edge of a Booking.
 func (c *BookingClient) QueryTrip(b *Booking) *TripQuery {
 	query := (&TripClient{config: c.config}).Query()
@@ -988,6 +1030,22 @@ func (c *CompanyClient) QueryParcels(co *Company) *ParcelQuery {
 	return query
 }
 
+// QueryTransactions queries the transactions edge of a Company.
+func (c *CompanyClient) QueryTransactions(co *Company) *TransactionQuery {
+	query := (&TransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(company.Table, company.FieldID, id),
+			sqlgraph.To(transaction.Table, transaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, company.TransactionsTable, company.TransactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNotifications queries the notifications edge of a Company.
 func (c *CompanyClient) QueryNotifications(co *Company) *NotificationQuery {
 	query := (&NotificationClient{config: c.config}).Query()
@@ -1255,6 +1313,139 @@ func (c *CompanyUserClient) mutate(ctx context.Context, m *CompanyUserMutation) 
 		return (&CompanyUserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CompanyUser mutation op: %q", m.Op())
+	}
+}
+
+// ConfigurationClient is a client for the Configuration schema.
+type ConfigurationClient struct {
+	config
+}
+
+// NewConfigurationClient returns a client for the Configuration from the given config.
+func NewConfigurationClient(c config) *ConfigurationClient {
+	return &ConfigurationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `configuration.Hooks(f(g(h())))`.
+func (c *ConfigurationClient) Use(hooks ...Hook) {
+	c.hooks.Configuration = append(c.hooks.Configuration, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `configuration.Intercept(f(g(h())))`.
+func (c *ConfigurationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Configuration = append(c.inters.Configuration, interceptors...)
+}
+
+// Create returns a builder for creating a Configuration entity.
+func (c *ConfigurationClient) Create() *ConfigurationCreate {
+	mutation := newConfigurationMutation(c.config, OpCreate)
+	return &ConfigurationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Configuration entities.
+func (c *ConfigurationClient) CreateBulk(builders ...*ConfigurationCreate) *ConfigurationCreateBulk {
+	return &ConfigurationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConfigurationClient) MapCreateBulk(slice any, setFunc func(*ConfigurationCreate, int)) *ConfigurationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConfigurationCreateBulk{err: fmt.Errorf("calling to ConfigurationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConfigurationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConfigurationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Configuration.
+func (c *ConfigurationClient) Update() *ConfigurationUpdate {
+	mutation := newConfigurationMutation(c.config, OpUpdate)
+	return &ConfigurationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConfigurationClient) UpdateOne(co *Configuration) *ConfigurationUpdateOne {
+	mutation := newConfigurationMutation(c.config, OpUpdateOne, withConfiguration(co))
+	return &ConfigurationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConfigurationClient) UpdateOneID(id int) *ConfigurationUpdateOne {
+	mutation := newConfigurationMutation(c.config, OpUpdateOne, withConfigurationID(id))
+	return &ConfigurationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Configuration.
+func (c *ConfigurationClient) Delete() *ConfigurationDelete {
+	mutation := newConfigurationMutation(c.config, OpDelete)
+	return &ConfigurationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConfigurationClient) DeleteOne(co *Configuration) *ConfigurationDeleteOne {
+	return c.DeleteOneID(co.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConfigurationClient) DeleteOneID(id int) *ConfigurationDeleteOne {
+	builder := c.Delete().Where(configuration.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConfigurationDeleteOne{builder}
+}
+
+// Query returns a query builder for Configuration.
+func (c *ConfigurationClient) Query() *ConfigurationQuery {
+	return &ConfigurationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConfiguration},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Configuration entity by its id.
+func (c *ConfigurationClient) Get(ctx context.Context, id int) (*Configuration, error) {
+	return c.Query().Where(configuration.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConfigurationClient) GetX(ctx context.Context, id int) *Configuration {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ConfigurationClient) Hooks() []Hook {
+	return c.hooks.Configuration
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConfigurationClient) Interceptors() []Interceptor {
+	return c.inters.Configuration
+}
+
+func (c *ConfigurationClient) mutate(ctx context.Context, m *ConfigurationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConfigurationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConfigurationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConfigurationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConfigurationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Configuration mutation op: %q", m.Op())
 	}
 }
 
@@ -2404,6 +2595,22 @@ func (c *ParcelClient) QueryImages(pa *Parcel) *ParcelImageQuery {
 	return query
 }
 
+// QueryTransaction queries the transaction edge of a Parcel.
+func (c *ParcelClient) QueryTransaction(pa *Parcel) *TransactionQuery {
+	query := (&TransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pa.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(parcel.Table, parcel.FieldID, id),
+			sqlgraph.To(transaction.Table, transaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, parcel.TransactionTable, parcel.TransactionColumn),
+		)
+		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryTrip queries the trip edge of a Parcel.
 func (c *ParcelClient) QueryTrip(pa *Parcel) *TripQuery {
 	query := (&TripClient{config: c.config}).Query()
@@ -2772,6 +2979,155 @@ func (c *PassengerClient) mutate(ctx context.Context, m *PassengerMutation) (Val
 		return (&PassengerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Passenger mutation op: %q", m.Op())
+	}
+}
+
+// PayoutClient is a client for the Payout schema.
+type PayoutClient struct {
+	config
+}
+
+// NewPayoutClient returns a client for the Payout from the given config.
+func NewPayoutClient(c config) *PayoutClient {
+	return &PayoutClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `payout.Hooks(f(g(h())))`.
+func (c *PayoutClient) Use(hooks ...Hook) {
+	c.hooks.Payout = append(c.hooks.Payout, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `payout.Intercept(f(g(h())))`.
+func (c *PayoutClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Payout = append(c.inters.Payout, interceptors...)
+}
+
+// Create returns a builder for creating a Payout entity.
+func (c *PayoutClient) Create() *PayoutCreate {
+	mutation := newPayoutMutation(c.config, OpCreate)
+	return &PayoutCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Payout entities.
+func (c *PayoutClient) CreateBulk(builders ...*PayoutCreate) *PayoutCreateBulk {
+	return &PayoutCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PayoutClient) MapCreateBulk(slice any, setFunc func(*PayoutCreate, int)) *PayoutCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PayoutCreateBulk{err: fmt.Errorf("calling to PayoutClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PayoutCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PayoutCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Payout.
+func (c *PayoutClient) Update() *PayoutUpdate {
+	mutation := newPayoutMutation(c.config, OpUpdate)
+	return &PayoutUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PayoutClient) UpdateOne(pa *Payout) *PayoutUpdateOne {
+	mutation := newPayoutMutation(c.config, OpUpdateOne, withPayout(pa))
+	return &PayoutUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PayoutClient) UpdateOneID(id int) *PayoutUpdateOne {
+	mutation := newPayoutMutation(c.config, OpUpdateOne, withPayoutID(id))
+	return &PayoutUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Payout.
+func (c *PayoutClient) Delete() *PayoutDelete {
+	mutation := newPayoutMutation(c.config, OpDelete)
+	return &PayoutDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PayoutClient) DeleteOne(pa *Payout) *PayoutDeleteOne {
+	return c.DeleteOneID(pa.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PayoutClient) DeleteOneID(id int) *PayoutDeleteOne {
+	builder := c.Delete().Where(payout.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PayoutDeleteOne{builder}
+}
+
+// Query returns a query builder for Payout.
+func (c *PayoutClient) Query() *PayoutQuery {
+	return &PayoutQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePayout},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Payout entity by its id.
+func (c *PayoutClient) Get(ctx context.Context, id int) (*Payout, error) {
+	return c.Query().Where(payout.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PayoutClient) GetX(ctx context.Context, id int) *Payout {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTransaction queries the transaction edge of a Payout.
+func (c *PayoutClient) QueryTransaction(pa *Payout) *TransactionQuery {
+	query := (&TransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pa.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(payout.Table, payout.FieldID, id),
+			sqlgraph.To(transaction.Table, transaction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, payout.TransactionTable, payout.TransactionColumn),
+		)
+		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PayoutClient) Hooks() []Hook {
+	return c.hooks.Payout
+}
+
+// Interceptors returns the client interceptors.
+func (c *PayoutClient) Interceptors() []Interceptor {
+	return c.inters.Payout
+}
+
+func (c *PayoutClient) mutate(ctx context.Context, m *PayoutMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PayoutCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PayoutUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PayoutUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PayoutDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Payout mutation op: %q", m.Op())
 	}
 }
 
@@ -3283,6 +3639,187 @@ func (c *TerminalClient) mutate(ctx context.Context, m *TerminalMutation) (Value
 		return (&TerminalDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Terminal mutation op: %q", m.Op())
+	}
+}
+
+// TransactionClient is a client for the Transaction schema.
+type TransactionClient struct {
+	config
+}
+
+// NewTransactionClient returns a client for the Transaction from the given config.
+func NewTransactionClient(c config) *TransactionClient {
+	return &TransactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `transaction.Hooks(f(g(h())))`.
+func (c *TransactionClient) Use(hooks ...Hook) {
+	c.hooks.Transaction = append(c.hooks.Transaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `transaction.Intercept(f(g(h())))`.
+func (c *TransactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Transaction = append(c.inters.Transaction, interceptors...)
+}
+
+// Create returns a builder for creating a Transaction entity.
+func (c *TransactionClient) Create() *TransactionCreate {
+	mutation := newTransactionMutation(c.config, OpCreate)
+	return &TransactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Transaction entities.
+func (c *TransactionClient) CreateBulk(builders ...*TransactionCreate) *TransactionCreateBulk {
+	return &TransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TransactionClient) MapCreateBulk(slice any, setFunc func(*TransactionCreate, int)) *TransactionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TransactionCreateBulk{err: fmt.Errorf("calling to TransactionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TransactionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Transaction.
+func (c *TransactionClient) Update() *TransactionUpdate {
+	mutation := newTransactionMutation(c.config, OpUpdate)
+	return &TransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TransactionClient) UpdateOne(t *Transaction) *TransactionUpdateOne {
+	mutation := newTransactionMutation(c.config, OpUpdateOne, withTransaction(t))
+	return &TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TransactionClient) UpdateOneID(id int) *TransactionUpdateOne {
+	mutation := newTransactionMutation(c.config, OpUpdateOne, withTransactionID(id))
+	return &TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Transaction.
+func (c *TransactionClient) Delete() *TransactionDelete {
+	mutation := newTransactionMutation(c.config, OpDelete)
+	return &TransactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TransactionClient) DeleteOne(t *Transaction) *TransactionDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TransactionClient) DeleteOneID(id int) *TransactionDeleteOne {
+	builder := c.Delete().Where(transaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TransactionDeleteOne{builder}
+}
+
+// Query returns a query builder for Transaction.
+func (c *TransactionClient) Query() *TransactionQuery {
+	return &TransactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTransaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Transaction entity by its id.
+func (c *TransactionClient) Get(ctx context.Context, id int) (*Transaction, error) {
+	return c.Query().Where(transaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TransactionClient) GetX(ctx context.Context, id int) *Transaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBooking queries the booking edge of a Transaction.
+func (c *TransactionClient) QueryBooking(t *Transaction) *BookingQuery {
+	query := (&BookingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(transaction.Table, transaction.FieldID, id),
+			sqlgraph.To(booking.Table, booking.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, transaction.BookingTable, transaction.BookingColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParcel queries the parcel edge of a Transaction.
+func (c *TransactionClient) QueryParcel(t *Transaction) *ParcelQuery {
+	query := (&ParcelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(transaction.Table, transaction.FieldID, id),
+			sqlgraph.To(parcel.Table, parcel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, transaction.ParcelTable, transaction.ParcelColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCompany queries the company edge of a Transaction.
+func (c *TransactionClient) QueryCompany(t *Transaction) *CompanyQuery {
+	query := (&CompanyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(transaction.Table, transaction.FieldID, id),
+			sqlgraph.To(company.Table, company.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, transaction.CompanyTable, transaction.CompanyColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TransactionClient) Hooks() []Hook {
+	return c.hooks.Transaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *TransactionClient) Interceptors() []Interceptor {
+	return c.inters.Transaction
+}
+
+func (c *TransactionClient) mutate(ctx context.Context, m *TransactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TransactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TransactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Transaction mutation op: %q", m.Op())
 	}
 }
 
@@ -4077,15 +4614,15 @@ func (c *VehicleImageClient) mutate(ctx context.Context, m *VehicleImageMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		BookibusUser, Booking, Company, CompanyUser, Customer, CustomerContact,
-		CustomerLuggage, Incident, IncidentImage, Notification, Parcel, ParcelImage,
-		Passenger, Route, RouteStop, Terminal, Trip, User, Vehicle,
-		VehicleImage []ent.Hook
+		BookibusUser, Booking, Company, CompanyUser, Configuration, Customer,
+		CustomerContact, CustomerLuggage, Incident, IncidentImage, Notification,
+		Parcel, ParcelImage, Passenger, Payout, Route, RouteStop, Terminal,
+		Transaction, Trip, User, Vehicle, VehicleImage []ent.Hook
 	}
 	inters struct {
-		BookibusUser, Booking, Company, CompanyUser, Customer, CustomerContact,
-		CustomerLuggage, Incident, IncidentImage, Notification, Parcel, ParcelImage,
-		Passenger, Route, RouteStop, Terminal, Trip, User, Vehicle,
-		VehicleImage []ent.Interceptor
+		BookibusUser, Booking, Company, CompanyUser, Configuration, Customer,
+		CustomerContact, CustomerLuggage, Incident, IncidentImage, Notification,
+		Parcel, ParcelImage, Passenger, Payout, Route, RouteStop, Terminal,
+		Transaction, Trip, User, Vehicle, VehicleImage []ent.Interceptor
 	}
 )

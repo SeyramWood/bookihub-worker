@@ -57,6 +57,18 @@ func (f CompanyUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CompanyUserMutation", m)
 }
 
+// The ConfigurationFunc type is an adapter to allow the use of ordinary
+// function as Configuration mutator.
+type ConfigurationFunc func(context.Context, *ent.ConfigurationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConfigurationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConfigurationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConfigurationMutation", m)
+}
+
 // The CustomerFunc type is an adapter to allow the use of ordinary
 // function as Customer mutator.
 type CustomerFunc func(context.Context, *ent.CustomerMutation) (ent.Value, error)
@@ -165,6 +177,18 @@ func (f PassengerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PassengerMutation", m)
 }
 
+// The PayoutFunc type is an adapter to allow the use of ordinary
+// function as Payout mutator.
+type PayoutFunc func(context.Context, *ent.PayoutMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PayoutFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PayoutMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PayoutMutation", m)
+}
+
 // The RouteFunc type is an adapter to allow the use of ordinary
 // function as Route mutator.
 type RouteFunc func(context.Context, *ent.RouteMutation) (ent.Value, error)
@@ -199,6 +223,18 @@ func (f TerminalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TerminalMutation", m)
+}
+
+// The TransactionFunc type is an adapter to allow the use of ordinary
+// function as Transaction mutator.
+type TransactionFunc func(context.Context, *ent.TransactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TransactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TransactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TransactionMutation", m)
 }
 
 // The TripFunc type is an adapter to allow the use of ordinary

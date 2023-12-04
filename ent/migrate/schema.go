@@ -30,15 +30,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "reference", Type: field.TypeString, Nullable: true},
 		{Name: "booking_number", Type: field.TypeString},
-		{Name: "vat", Type: field.TypeFloat64, Default: 0},
-		{Name: "sms_fee", Type: field.TypeFloat64, Default: 0},
-		{Name: "amount", Type: field.TypeFloat64, Default: 0},
-		{Name: "refund_amount", Type: field.TypeFloat64, Nullable: true},
-		{Name: "paid_at", Type: field.TypeTime, Nullable: true},
-		{Name: "refund_at", Type: field.TypeTime, Nullable: true},
-		{Name: "tans_type", Type: field.TypeEnum, Enums: []string{"momo", "card", "cash"}, Default: "cash"},
 		{Name: "sms_notification", Type: field.TypeBool, Default: false},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"successful", "canceled"}, Default: "successful"},
 		{Name: "company_bookings", Type: field.TypeInt, Nullable: true},
@@ -53,19 +45,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "bookings_companies_bookings",
-				Columns:    []*schema.Column{BookingsColumns[14]},
+				Columns:    []*schema.Column{BookingsColumns[6]},
 				RefColumns: []*schema.Column{CompaniesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "bookings_customers_bookings",
-				Columns:    []*schema.Column{BookingsColumns[15]},
+				Columns:    []*schema.Column{BookingsColumns[7]},
 				RefColumns: []*schema.Column{CustomersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "bookings_trips_bookings",
-				Columns:    []*schema.Column{BookingsColumns[16]},
+				Columns:    []*schema.Column{BookingsColumns[8]},
 				RefColumns: []*schema.Column{TripsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -78,8 +70,11 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "phone", Type: field.TypeString},
-		{Name: "other_phone", Type: field.TypeString, Nullable: true},
 		{Name: "email", Type: field.TypeString},
+		{Name: "certificate", Type: field.TypeString, Nullable: true},
+		{Name: "bank_account", Type: field.TypeJSON, Nullable: true},
+		{Name: "contact_person", Type: field.TypeJSON, Nullable: true},
+		{Name: "onboarding_status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected"}, Default: "pending"},
 	}
 	// CompaniesTable holds the schema information for the "companies" table.
 	CompaniesTable = &schema.Table{
@@ -113,6 +108,19 @@ var (
 			},
 		},
 	}
+	// ConfigurationsColumns holds the columns for the "configurations" table.
+	ConfigurationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "charge", Type: field.TypeJSON},
+	}
+	// ConfigurationsTable holds the schema information for the "configurations" table.
+	ConfigurationsTable = &schema.Table{
+		Name:       "configurations",
+		Columns:    ConfigurationsColumns,
+		PrimaryKey: []*schema.Column{ConfigurationsColumns[0]},
+	}
 	// CustomersColumns holds the columns for the "customers" table.
 	CustomersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -135,8 +143,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "full_name", Type: field.TypeString},
-		{Name: "email", Type: field.TypeString},
-		{Name: "phone", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString, Nullable: true},
+		{Name: "phone", Type: field.TypeString, Nullable: true},
 		{Name: "booking_contact", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// CustomerContactsTable holds the schema information for the "customer_contacts" table.
@@ -284,9 +292,6 @@ var (
 		{Name: "recipient_phone", Type: field.TypeString},
 		{Name: "recipient_location", Type: field.TypeString},
 		{Name: "weight", Type: field.TypeFloat32, Nullable: true},
-		{Name: "amount", Type: field.TypeFloat64, Default: 0},
-		{Name: "paid_at", Type: field.TypeTime, Nullable: true},
-		{Name: "tans_type", Type: field.TypeEnum, Enums: []string{"momo", "card", "cash"}, Default: "cash"},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"outgoing", "delivered"}, Default: "outgoing"},
 		{Name: "company_parcels", Type: field.TypeInt, Nullable: true},
 		{Name: "company_user_parcels", Type: field.TypeInt, Nullable: true},
@@ -300,19 +305,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "parcels_companies_parcels",
-				Columns:    []*schema.Column{ParcelsColumns[16]},
+				Columns:    []*schema.Column{ParcelsColumns[13]},
 				RefColumns: []*schema.Column{CompaniesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "parcels_company_users_parcels",
-				Columns:    []*schema.Column{ParcelsColumns[17]},
+				Columns:    []*schema.Column{ParcelsColumns[14]},
 				RefColumns: []*schema.Column{CompanyUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "parcels_trips_parcels",
-				Columns:    []*schema.Column{ParcelsColumns[18]},
+				Columns:    []*schema.Column{ParcelsColumns[15]},
 				RefColumns: []*schema.Column{TripsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -366,6 +371,29 @@ var (
 			},
 		},
 	}
+	// PayoutsColumns holds the columns for the "payouts" table.
+	PayoutsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "account_name", Type: field.TypeString},
+		{Name: "account_number", Type: field.TypeString},
+		{Name: "bank", Type: field.TypeString},
+		{Name: "branch", Type: field.TypeString},
+		{Name: "payout_transaction", Type: field.TypeInt, Nullable: true},
+	}
+	// PayoutsTable holds the schema information for the "payouts" table.
+	PayoutsTable = &schema.Table{
+		Name:       "payouts",
+		Columns:    PayoutsColumns,
+		PrimaryKey: []*schema.Column{PayoutsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "payouts_transactions_transaction",
+				Columns:    []*schema.Column{PayoutsColumns[5]},
+				RefColumns: []*schema.Column{TransactionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// RoutesColumns holds the columns for the "routes" table.
 	RoutesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -377,8 +405,6 @@ var (
 		{Name: "from_longitude", Type: field.TypeFloat64, Nullable: true},
 		{Name: "to_latitude", Type: field.TypeFloat64, Nullable: true},
 		{Name: "to_longitude", Type: field.TypeFloat64, Nullable: true},
-		{Name: "rate", Type: field.TypeFloat64, Default: 0},
-		{Name: "discount", Type: field.TypeFloat32, Default: 0},
 		{Name: "popularity", Type: field.TypeInt, Default: 0},
 		{Name: "company_routes", Type: field.TypeInt, Nullable: true},
 	}
@@ -390,7 +416,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "routes_companies_routes",
-				Columns:    []*schema.Column{RoutesColumns[12]},
+				Columns:    []*schema.Column{RoutesColumns[10]},
 				RefColumns: []*schema.Column{CompaniesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -441,6 +467,50 @@ var (
 			},
 		},
 	}
+	// TransactionsColumns holds the columns for the "transactions" table.
+	TransactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "reference", Type: field.TypeString},
+		{Name: "amount", Type: field.TypeFloat64, Default: 0},
+		{Name: "vat", Type: field.TypeFloat64, Default: 0},
+		{Name: "transaction_fee", Type: field.TypeFloat64, Default: 0},
+		{Name: "cancellation_fee", Type: field.TypeFloat64, Default: 0},
+		{Name: "paid_at", Type: field.TypeTime, Nullable: true},
+		{Name: "canceled_at", Type: field.TypeTime, Nullable: true},
+		{Name: "channel", Type: field.TypeEnum, Enums: []string{"momo", "card", "bank", "cash"}, Default: "cash"},
+		{Name: "tans_kind", Type: field.TypeEnum, Enums: []string{"payment", "payout"}, Default: "payment"},
+		{Name: "booking_transaction", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "company_transactions", Type: field.TypeInt},
+		{Name: "parcel_transaction", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// TransactionsTable holds the schema information for the "transactions" table.
+	TransactionsTable = &schema.Table{
+		Name:       "transactions",
+		Columns:    TransactionsColumns,
+		PrimaryKey: []*schema.Column{TransactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "transactions_bookings_transaction",
+				Columns:    []*schema.Column{TransactionsColumns[12]},
+				RefColumns: []*schema.Column{BookingsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "transactions_companies_transactions",
+				Columns:    []*schema.Column{TransactionsColumns[13]},
+				RefColumns: []*schema.Column{CompaniesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "transactions_parcels_transaction",
+				Columns:    []*schema.Column{TransactionsColumns[14]},
+				RefColumns: []*schema.Column{ParcelsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// TripsColumns holds the columns for the "trips" table.
 	TripsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -458,6 +528,8 @@ var (
 		{Name: "fuel_and_fluids_inspected", Type: field.TypeBool, Default: false},
 		{Name: "scheduled", Type: field.TypeBool, Default: false},
 		{Name: "seat_left", Type: field.TypeInt, Default: 0},
+		{Name: "rate", Type: field.TypeFloat64, Default: 0},
+		{Name: "discount", Type: field.TypeFloat32, Default: 0},
 		{Name: "status", Type: field.TypeEnum, Nullable: true, Enums: []string{"started", "ended"}},
 		{Name: "company_trips", Type: field.TypeInt, Nullable: true},
 		{Name: "company_user_trips", Type: field.TypeInt, Nullable: true},
@@ -474,37 +546,37 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "trips_companies_trips",
-				Columns:    []*schema.Column{TripsColumns[16]},
+				Columns:    []*schema.Column{TripsColumns[18]},
 				RefColumns: []*schema.Column{CompaniesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "trips_company_users_trips",
-				Columns:    []*schema.Column{TripsColumns[17]},
+				Columns:    []*schema.Column{TripsColumns[19]},
 				RefColumns: []*schema.Column{CompanyUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "trips_routes_trips",
-				Columns:    []*schema.Column{TripsColumns[18]},
+				Columns:    []*schema.Column{TripsColumns[20]},
 				RefColumns: []*schema.Column{RoutesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "trips_terminals_from",
-				Columns:    []*schema.Column{TripsColumns[19]},
+				Columns:    []*schema.Column{TripsColumns[21]},
 				RefColumns: []*schema.Column{TerminalsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "trips_terminals_to",
-				Columns:    []*schema.Column{TripsColumns[20]},
+				Columns:    []*schema.Column{TripsColumns[22]},
 				RefColumns: []*schema.Column{TerminalsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "trips_vehicles_trips",
-				Columns:    []*schema.Column{TripsColumns[21]},
+				Columns:    []*schema.Column{TripsColumns[23]},
 				RefColumns: []*schema.Column{VehiclesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -518,6 +590,7 @@ var (
 		{Name: "username", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeBytes},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"bookibus", "company", "customer"}},
+		{Name: "avatar", Type: field.TypeString, Nullable: true},
 		{Name: "bookibus_user_profile", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "company_user_profile", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "customer_profile", Type: field.TypeInt, Unique: true, Nullable: true},
@@ -530,19 +603,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_bookibus_users_profile",
-				Columns:    []*schema.Column{UsersColumns[6]},
+				Columns:    []*schema.Column{UsersColumns[7]},
 				RefColumns: []*schema.Column{BookibusUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "users_company_users_profile",
-				Columns:    []*schema.Column{UsersColumns[7]},
+				Columns:    []*schema.Column{UsersColumns[8]},
 				RefColumns: []*schema.Column{CompanyUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "users_customers_profile",
-				Columns:    []*schema.Column{UsersColumns[8]},
+				Columns:    []*schema.Column{UsersColumns[9]},
 				RefColumns: []*schema.Column{CustomersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -675,6 +748,7 @@ var (
 		BookingsTable,
 		CompaniesTable,
 		CompanyUsersTable,
+		ConfigurationsTable,
 		CustomersTable,
 		CustomerContactsTable,
 		CustomerLuggagesTable,
@@ -684,9 +758,11 @@ var (
 		ParcelsTable,
 		ParcelImagesTable,
 		PassengersTable,
+		PayoutsTable,
 		RoutesTable,
 		RouteStopsTable,
 		TerminalsTable,
+		TransactionsTable,
 		TripsTable,
 		UsersTable,
 		VehiclesTable,
@@ -714,9 +790,13 @@ func init() {
 	ParcelsTable.ForeignKeys[2].RefTable = TripsTable
 	ParcelImagesTable.ForeignKeys[0].RefTable = ParcelsTable
 	PassengersTable.ForeignKeys[0].RefTable = BookingsTable
+	PayoutsTable.ForeignKeys[0].RefTable = TransactionsTable
 	RoutesTable.ForeignKeys[0].RefTable = CompaniesTable
 	RouteStopsTable.ForeignKeys[0].RefTable = RoutesTable
 	TerminalsTable.ForeignKeys[0].RefTable = CompaniesTable
+	TransactionsTable.ForeignKeys[0].RefTable = BookingsTable
+	TransactionsTable.ForeignKeys[1].RefTable = CompaniesTable
+	TransactionsTable.ForeignKeys[2].RefTable = ParcelsTable
 	TripsTable.ForeignKeys[0].RefTable = CompaniesTable
 	TripsTable.ForeignKeys[1].RefTable = CompanyUsersTable
 	TripsTable.ForeignKeys[2].RefTable = RoutesTable

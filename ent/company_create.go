@@ -17,7 +17,9 @@ import (
 	"github.com/SeyramWood/bookibus/ent/notification"
 	"github.com/SeyramWood/bookibus/ent/parcel"
 	"github.com/SeyramWood/bookibus/ent/route"
+	"github.com/SeyramWood/bookibus/ent/schema"
 	"github.com/SeyramWood/bookibus/ent/terminal"
+	"github.com/SeyramWood/bookibus/ent/transaction"
 	"github.com/SeyramWood/bookibus/ent/trip"
 	"github.com/SeyramWood/bookibus/ent/vehicle"
 )
@@ -69,23 +71,49 @@ func (cc *CompanyCreate) SetPhone(s string) *CompanyCreate {
 	return cc
 }
 
-// SetOtherPhone sets the "other_phone" field.
-func (cc *CompanyCreate) SetOtherPhone(s string) *CompanyCreate {
-	cc.mutation.SetOtherPhone(s)
+// SetEmail sets the "email" field.
+func (cc *CompanyCreate) SetEmail(s string) *CompanyCreate {
+	cc.mutation.SetEmail(s)
 	return cc
 }
 
-// SetNillableOtherPhone sets the "other_phone" field if the given value is not nil.
-func (cc *CompanyCreate) SetNillableOtherPhone(s *string) *CompanyCreate {
+// SetCertificate sets the "certificate" field.
+func (cc *CompanyCreate) SetCertificate(s string) *CompanyCreate {
+	cc.mutation.SetCertificate(s)
+	return cc
+}
+
+// SetNillableCertificate sets the "certificate" field if the given value is not nil.
+func (cc *CompanyCreate) SetNillableCertificate(s *string) *CompanyCreate {
 	if s != nil {
-		cc.SetOtherPhone(*s)
+		cc.SetCertificate(*s)
 	}
 	return cc
 }
 
-// SetEmail sets the "email" field.
-func (cc *CompanyCreate) SetEmail(s string) *CompanyCreate {
-	cc.mutation.SetEmail(s)
+// SetBankAccount sets the "bank_account" field.
+func (cc *CompanyCreate) SetBankAccount(sa *schema.BankAccount) *CompanyCreate {
+	cc.mutation.SetBankAccount(sa)
+	return cc
+}
+
+// SetContactPerson sets the "contact_person" field.
+func (cc *CompanyCreate) SetContactPerson(sp *schema.ContactPerson) *CompanyCreate {
+	cc.mutation.SetContactPerson(sp)
+	return cc
+}
+
+// SetOnboardingStatus sets the "onboarding_status" field.
+func (cc *CompanyCreate) SetOnboardingStatus(cs company.OnboardingStatus) *CompanyCreate {
+	cc.mutation.SetOnboardingStatus(cs)
+	return cc
+}
+
+// SetNillableOnboardingStatus sets the "onboarding_status" field if the given value is not nil.
+func (cc *CompanyCreate) SetNillableOnboardingStatus(cs *company.OnboardingStatus) *CompanyCreate {
+	if cs != nil {
+		cc.SetOnboardingStatus(*cs)
+	}
 	return cc
 }
 
@@ -209,6 +237,21 @@ func (cc *CompanyCreate) AddParcels(p ...*Parcel) *CompanyCreate {
 	return cc.AddParcelIDs(ids...)
 }
 
+// AddTransactionIDs adds the "transactions" edge to the Transaction entity by IDs.
+func (cc *CompanyCreate) AddTransactionIDs(ids ...int) *CompanyCreate {
+	cc.mutation.AddTransactionIDs(ids...)
+	return cc
+}
+
+// AddTransactions adds the "transactions" edges to the Transaction entity.
+func (cc *CompanyCreate) AddTransactions(t ...*Transaction) *CompanyCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return cc.AddTransactionIDs(ids...)
+}
+
 // AddNotificationIDs adds the "notifications" edge to the Notification entity by IDs.
 func (cc *CompanyCreate) AddNotificationIDs(ids ...int) *CompanyCreate {
 	cc.mutation.AddNotificationIDs(ids...)
@@ -267,6 +310,10 @@ func (cc *CompanyCreate) defaults() {
 		v := company.DefaultUpdatedAt()
 		cc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := cc.mutation.OnboardingStatus(); !ok {
+		v := company.DefaultOnboardingStatus
+		cc.mutation.SetOnboardingStatus(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -299,6 +346,14 @@ func (cc *CompanyCreate) check() error {
 	if v, ok := cc.mutation.Email(); ok {
 		if err := company.EmailValidator(v); err != nil {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "Company.email": %w`, err)}
+		}
+	}
+	if _, ok := cc.mutation.OnboardingStatus(); !ok {
+		return &ValidationError{Name: "onboarding_status", err: errors.New(`ent: missing required field "Company.onboarding_status"`)}
+	}
+	if v, ok := cc.mutation.OnboardingStatus(); ok {
+		if err := company.OnboardingStatusValidator(v); err != nil {
+			return &ValidationError{Name: "onboarding_status", err: fmt.Errorf(`ent: validator failed for field "Company.onboarding_status": %w`, err)}
 		}
 	}
 	return nil
@@ -343,13 +398,25 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec) {
 		_spec.SetField(company.FieldPhone, field.TypeString, value)
 		_node.Phone = value
 	}
-	if value, ok := cc.mutation.OtherPhone(); ok {
-		_spec.SetField(company.FieldOtherPhone, field.TypeString, value)
-		_node.OtherPhone = value
-	}
 	if value, ok := cc.mutation.Email(); ok {
 		_spec.SetField(company.FieldEmail, field.TypeString, value)
 		_node.Email = value
+	}
+	if value, ok := cc.mutation.Certificate(); ok {
+		_spec.SetField(company.FieldCertificate, field.TypeString, value)
+		_node.Certificate = value
+	}
+	if value, ok := cc.mutation.BankAccount(); ok {
+		_spec.SetField(company.FieldBankAccount, field.TypeJSON, value)
+		_node.BankAccount = value
+	}
+	if value, ok := cc.mutation.ContactPerson(); ok {
+		_spec.SetField(company.FieldContactPerson, field.TypeJSON, value)
+		_node.ContactPerson = value
+	}
+	if value, ok := cc.mutation.OnboardingStatus(); ok {
+		_spec.SetField(company.FieldOnboardingStatus, field.TypeEnum, value)
+		_node.OnboardingStatus = value
 	}
 	if nodes := cc.mutation.ProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -472,6 +539,22 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(parcel.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.TransactionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.TransactionsTable,
+			Columns: []string{company.TransactionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(transaction.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -16,6 +16,7 @@ import (
 	"github.com/SeyramWood/bookibus/ent/booking"
 	"github.com/SeyramWood/bookibus/ent/company"
 	"github.com/SeyramWood/bookibus/ent/companyuser"
+	"github.com/SeyramWood/bookibus/ent/configuration"
 	"github.com/SeyramWood/bookibus/ent/customer"
 	"github.com/SeyramWood/bookibus/ent/customercontact"
 	"github.com/SeyramWood/bookibus/ent/customerluggage"
@@ -25,9 +26,11 @@ import (
 	"github.com/SeyramWood/bookibus/ent/parcel"
 	"github.com/SeyramWood/bookibus/ent/parcelimage"
 	"github.com/SeyramWood/bookibus/ent/passenger"
+	"github.com/SeyramWood/bookibus/ent/payout"
 	"github.com/SeyramWood/bookibus/ent/route"
 	"github.com/SeyramWood/bookibus/ent/routestop"
 	"github.com/SeyramWood/bookibus/ent/terminal"
+	"github.com/SeyramWood/bookibus/ent/transaction"
 	"github.com/SeyramWood/bookibus/ent/trip"
 	"github.com/SeyramWood/bookibus/ent/user"
 	"github.com/SeyramWood/bookibus/ent/vehicle"
@@ -96,6 +99,7 @@ func checkColumn(table, column string) error {
 			booking.Table:         booking.ValidColumn,
 			company.Table:         company.ValidColumn,
 			companyuser.Table:     companyuser.ValidColumn,
+			configuration.Table:   configuration.ValidColumn,
 			customer.Table:        customer.ValidColumn,
 			customercontact.Table: customercontact.ValidColumn,
 			customerluggage.Table: customerluggage.ValidColumn,
@@ -105,9 +109,11 @@ func checkColumn(table, column string) error {
 			parcel.Table:          parcel.ValidColumn,
 			parcelimage.Table:     parcelimage.ValidColumn,
 			passenger.Table:       passenger.ValidColumn,
+			payout.Table:          payout.ValidColumn,
 			route.Table:           route.ValidColumn,
 			routestop.Table:       routestop.ValidColumn,
 			terminal.Table:        terminal.ValidColumn,
+			transaction.Table:     transaction.ValidColumn,
 			trip.Table:            trip.ValidColumn,
 			user.Table:            user.ValidColumn,
 			vehicle.Table:         vehicle.ValidColumn,

@@ -18,6 +18,9 @@ type Company func(*sql.Selector)
 // CompanyUser is the predicate function for companyuser builders.
 type CompanyUser func(*sql.Selector)
 
+// Configuration is the predicate function for configuration builders.
+type Configuration func(*sql.Selector)
+
 // Customer is the predicate function for customer builders.
 type Customer func(*sql.Selector)
 
@@ -45,6 +48,9 @@ type ParcelImage func(*sql.Selector)
 // Passenger is the predicate function for passenger builders.
 type Passenger func(*sql.Selector)
 
+// Payout is the predicate function for payout builders.
+type Payout func(*sql.Selector)
+
 // Route is the predicate function for route builders.
 type Route func(*sql.Selector)
 
@@ -53,6 +59,9 @@ type RouteStop func(*sql.Selector)
 
 // Terminal is the predicate function for terminal builders.
 type Terminal func(*sql.Selector)
+
+// Transaction is the predicate function for transaction builders.
+type Transaction func(*sql.Selector)
 
 // Trip is the predicate function for trip builders.
 type Trip func(*sql.Selector)
