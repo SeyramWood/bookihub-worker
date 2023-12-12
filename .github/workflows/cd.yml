@@ -35,7 +35,7 @@ jobs:
             password: ${{ secrets.DOCKERHUB_PASSWORD }}
             dockerfile: DockerfileProd
             default_branch: beta
-            tags: "beta.api" 
+            tags: "beta.worker" 
 
   build-and-publish-production-image-to-dockerhub:
     if: ${{github.ref == 'refs/heads/master'}}
