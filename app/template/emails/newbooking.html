@@ -15,6 +15,15 @@
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Handlee&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100&display=swap");
 
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: inherit;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
     html {
       font-family: "Poppins", sans-serif;
       font-size: 1rem;
@@ -367,7 +376,7 @@
         <footer class="ticket__footer">
           <h3>BOARDING PASS</h3>
           <picture>
-            <img src="{{.message.appUrl}}/BookiRide.png" alt="qr" className="w-32 h-32" />
+            <img src="{{.message.appUrl}}/bookiride.png" alt="qr" className="w-32 h-32" />
           </picture>
         </footer>
       </div>
@@ -399,6 +408,5 @@
     document.getElementById("year").innerText = (new Date()).getUTCFullYear()
   </script>
 </body>
-
 </html>
 {{end}}
