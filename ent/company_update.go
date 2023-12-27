@@ -19,6 +19,7 @@ import (
 	"github.com/SeyramWood/bookibus/ent/parcel"
 	"github.com/SeyramWood/bookibus/ent/predicate"
 	"github.com/SeyramWood/bookibus/ent/route"
+	"github.com/SeyramWood/bookibus/ent/routestop"
 	"github.com/SeyramWood/bookibus/ent/schema"
 	"github.com/SeyramWood/bookibus/ent/terminal"
 	"github.com/SeyramWood/bookibus/ent/transaction"
@@ -108,6 +109,26 @@ func (cu *CompanyUpdate) ClearContactPerson() *CompanyUpdate {
 	return cu
 }
 
+// SetLogo sets the "logo" field.
+func (cu *CompanyUpdate) SetLogo(s string) *CompanyUpdate {
+	cu.mutation.SetLogo(s)
+	return cu
+}
+
+// SetNillableLogo sets the "logo" field if the given value is not nil.
+func (cu *CompanyUpdate) SetNillableLogo(s *string) *CompanyUpdate {
+	if s != nil {
+		cu.SetLogo(*s)
+	}
+	return cu
+}
+
+// ClearLogo clears the value of the "logo" field.
+func (cu *CompanyUpdate) ClearLogo() *CompanyUpdate {
+	cu.mutation.ClearLogo()
+	return cu
+}
+
 // SetOnboardingStatus sets the "onboarding_status" field.
 func (cu *CompanyUpdate) SetOnboardingStatus(cs company.OnboardingStatus) *CompanyUpdate {
 	cu.mutation.SetOnboardingStatus(cs)
@@ -119,6 +140,27 @@ func (cu *CompanyUpdate) SetNillableOnboardingStatus(cs *company.OnboardingStatu
 	if cs != nil {
 		cu.SetOnboardingStatus(*cs)
 	}
+	return cu
+}
+
+// SetOnboardingStage sets the "onboarding_stage" field.
+func (cu *CompanyUpdate) SetOnboardingStage(i int8) *CompanyUpdate {
+	cu.mutation.ResetOnboardingStage()
+	cu.mutation.SetOnboardingStage(i)
+	return cu
+}
+
+// SetNillableOnboardingStage sets the "onboarding_stage" field if the given value is not nil.
+func (cu *CompanyUpdate) SetNillableOnboardingStage(i *int8) *CompanyUpdate {
+	if i != nil {
+		cu.SetOnboardingStage(*i)
+	}
+	return cu
+}
+
+// AddOnboardingStage adds i to the "onboarding_stage" field.
+func (cu *CompanyUpdate) AddOnboardingStage(i int8) *CompanyUpdate {
+	cu.mutation.AddOnboardingStage(i)
 	return cu
 }
 
@@ -180,6 +222,21 @@ func (cu *CompanyUpdate) AddRoutes(r ...*Route) *CompanyUpdate {
 		ids[i] = r[i].ID
 	}
 	return cu.AddRouteIDs(ids...)
+}
+
+// AddStopIDs adds the "stops" edge to the RouteStop entity by IDs.
+func (cu *CompanyUpdate) AddStopIDs(ids ...int) *CompanyUpdate {
+	cu.mutation.AddStopIDs(ids...)
+	return cu
+}
+
+// AddStops adds the "stops" edges to the RouteStop entity.
+func (cu *CompanyUpdate) AddStops(r ...*RouteStop) *CompanyUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cu.AddStopIDs(ids...)
 }
 
 // AddTripIDs adds the "trips" edge to the Trip entity by IDs.
@@ -359,6 +416,27 @@ func (cu *CompanyUpdate) RemoveRoutes(r ...*Route) *CompanyUpdate {
 		ids[i] = r[i].ID
 	}
 	return cu.RemoveRouteIDs(ids...)
+}
+
+// ClearStops clears all "stops" edges to the RouteStop entity.
+func (cu *CompanyUpdate) ClearStops() *CompanyUpdate {
+	cu.mutation.ClearStops()
+	return cu
+}
+
+// RemoveStopIDs removes the "stops" edge to RouteStop entities by IDs.
+func (cu *CompanyUpdate) RemoveStopIDs(ids ...int) *CompanyUpdate {
+	cu.mutation.RemoveStopIDs(ids...)
+	return cu
+}
+
+// RemoveStops removes "stops" edges to RouteStop entities.
+func (cu *CompanyUpdate) RemoveStops(r ...*RouteStop) *CompanyUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cu.RemoveStopIDs(ids...)
 }
 
 // ClearTrips clears all "trips" edges to the Trip entity.
@@ -596,8 +674,20 @@ func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if cu.mutation.ContactPersonCleared() {
 		_spec.ClearField(company.FieldContactPerson, field.TypeJSON)
 	}
+	if value, ok := cu.mutation.Logo(); ok {
+		_spec.SetField(company.FieldLogo, field.TypeString, value)
+	}
+	if cu.mutation.LogoCleared() {
+		_spec.ClearField(company.FieldLogo, field.TypeString)
+	}
 	if value, ok := cu.mutation.OnboardingStatus(); ok {
 		_spec.SetField(company.FieldOnboardingStatus, field.TypeEnum, value)
+	}
+	if value, ok := cu.mutation.OnboardingStage(); ok {
+		_spec.SetField(company.FieldOnboardingStage, field.TypeInt8, value)
+	}
+	if value, ok := cu.mutation.AddedOnboardingStage(); ok {
+		_spec.AddField(company.FieldOnboardingStage, field.TypeInt8, value)
 	}
 	if cu.mutation.ProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -772,6 +862,51 @@ func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(route.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cu.mutation.StopsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedStopsIDs(); len(nodes) > 0 && !cu.mutation.StopsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.StopsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1139,6 +1274,26 @@ func (cuo *CompanyUpdateOne) ClearContactPerson() *CompanyUpdateOne {
 	return cuo
 }
 
+// SetLogo sets the "logo" field.
+func (cuo *CompanyUpdateOne) SetLogo(s string) *CompanyUpdateOne {
+	cuo.mutation.SetLogo(s)
+	return cuo
+}
+
+// SetNillableLogo sets the "logo" field if the given value is not nil.
+func (cuo *CompanyUpdateOne) SetNillableLogo(s *string) *CompanyUpdateOne {
+	if s != nil {
+		cuo.SetLogo(*s)
+	}
+	return cuo
+}
+
+// ClearLogo clears the value of the "logo" field.
+func (cuo *CompanyUpdateOne) ClearLogo() *CompanyUpdateOne {
+	cuo.mutation.ClearLogo()
+	return cuo
+}
+
 // SetOnboardingStatus sets the "onboarding_status" field.
 func (cuo *CompanyUpdateOne) SetOnboardingStatus(cs company.OnboardingStatus) *CompanyUpdateOne {
 	cuo.mutation.SetOnboardingStatus(cs)
@@ -1150,6 +1305,27 @@ func (cuo *CompanyUpdateOne) SetNillableOnboardingStatus(cs *company.OnboardingS
 	if cs != nil {
 		cuo.SetOnboardingStatus(*cs)
 	}
+	return cuo
+}
+
+// SetOnboardingStage sets the "onboarding_stage" field.
+func (cuo *CompanyUpdateOne) SetOnboardingStage(i int8) *CompanyUpdateOne {
+	cuo.mutation.ResetOnboardingStage()
+	cuo.mutation.SetOnboardingStage(i)
+	return cuo
+}
+
+// SetNillableOnboardingStage sets the "onboarding_stage" field if the given value is not nil.
+func (cuo *CompanyUpdateOne) SetNillableOnboardingStage(i *int8) *CompanyUpdateOne {
+	if i != nil {
+		cuo.SetOnboardingStage(*i)
+	}
+	return cuo
+}
+
+// AddOnboardingStage adds i to the "onboarding_stage" field.
+func (cuo *CompanyUpdateOne) AddOnboardingStage(i int8) *CompanyUpdateOne {
+	cuo.mutation.AddOnboardingStage(i)
 	return cuo
 }
 
@@ -1211,6 +1387,21 @@ func (cuo *CompanyUpdateOne) AddRoutes(r ...*Route) *CompanyUpdateOne {
 		ids[i] = r[i].ID
 	}
 	return cuo.AddRouteIDs(ids...)
+}
+
+// AddStopIDs adds the "stops" edge to the RouteStop entity by IDs.
+func (cuo *CompanyUpdateOne) AddStopIDs(ids ...int) *CompanyUpdateOne {
+	cuo.mutation.AddStopIDs(ids...)
+	return cuo
+}
+
+// AddStops adds the "stops" edges to the RouteStop entity.
+func (cuo *CompanyUpdateOne) AddStops(r ...*RouteStop) *CompanyUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cuo.AddStopIDs(ids...)
 }
 
 // AddTripIDs adds the "trips" edge to the Trip entity by IDs.
@@ -1390,6 +1581,27 @@ func (cuo *CompanyUpdateOne) RemoveRoutes(r ...*Route) *CompanyUpdateOne {
 		ids[i] = r[i].ID
 	}
 	return cuo.RemoveRouteIDs(ids...)
+}
+
+// ClearStops clears all "stops" edges to the RouteStop entity.
+func (cuo *CompanyUpdateOne) ClearStops() *CompanyUpdateOne {
+	cuo.mutation.ClearStops()
+	return cuo
+}
+
+// RemoveStopIDs removes the "stops" edge to RouteStop entities by IDs.
+func (cuo *CompanyUpdateOne) RemoveStopIDs(ids ...int) *CompanyUpdateOne {
+	cuo.mutation.RemoveStopIDs(ids...)
+	return cuo
+}
+
+// RemoveStops removes "stops" edges to RouteStop entities.
+func (cuo *CompanyUpdateOne) RemoveStops(r ...*RouteStop) *CompanyUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cuo.RemoveStopIDs(ids...)
 }
 
 // ClearTrips clears all "trips" edges to the Trip entity.
@@ -1657,8 +1869,20 @@ func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err e
 	if cuo.mutation.ContactPersonCleared() {
 		_spec.ClearField(company.FieldContactPerson, field.TypeJSON)
 	}
+	if value, ok := cuo.mutation.Logo(); ok {
+		_spec.SetField(company.FieldLogo, field.TypeString, value)
+	}
+	if cuo.mutation.LogoCleared() {
+		_spec.ClearField(company.FieldLogo, field.TypeString)
+	}
 	if value, ok := cuo.mutation.OnboardingStatus(); ok {
 		_spec.SetField(company.FieldOnboardingStatus, field.TypeEnum, value)
+	}
+	if value, ok := cuo.mutation.OnboardingStage(); ok {
+		_spec.SetField(company.FieldOnboardingStage, field.TypeInt8, value)
+	}
+	if value, ok := cuo.mutation.AddedOnboardingStage(); ok {
+		_spec.AddField(company.FieldOnboardingStage, field.TypeInt8, value)
 	}
 	if cuo.mutation.ProfileCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1833,6 +2057,51 @@ func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(route.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.StopsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedStopsIDs(); len(nodes) > 0 && !cuo.mutation.StopsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.StopsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

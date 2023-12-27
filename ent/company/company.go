@@ -31,8 +31,12 @@ const (
 	FieldBankAccount = "bank_account"
 	// FieldContactPerson holds the string denoting the contact_person field in the database.
 	FieldContactPerson = "contact_person"
+	// FieldLogo holds the string denoting the logo field in the database.
+	FieldLogo = "logo"
 	// FieldOnboardingStatus holds the string denoting the onboarding_status field in the database.
 	FieldOnboardingStatus = "onboarding_status"
+	// FieldOnboardingStage holds the string denoting the onboarding_stage field in the database.
+	FieldOnboardingStage = "onboarding_stage"
 	// EdgeProfile holds the string denoting the profile edge name in mutations.
 	EdgeProfile = "profile"
 	// EdgeTerminals holds the string denoting the terminals edge name in mutations.
@@ -41,6 +45,8 @@ const (
 	EdgeVehicles = "vehicles"
 	// EdgeRoutes holds the string denoting the routes edge name in mutations.
 	EdgeRoutes = "routes"
+	// EdgeStops holds the string denoting the stops edge name in mutations.
+	EdgeStops = "stops"
 	// EdgeTrips holds the string denoting the trips edge name in mutations.
 	EdgeTrips = "trips"
 	// EdgeBookings holds the string denoting the bookings edge name in mutations.
@@ -83,6 +89,13 @@ const (
 	RoutesInverseTable = "routes"
 	// RoutesColumn is the table column denoting the routes relation/edge.
 	RoutesColumn = "company_routes"
+	// StopsTable is the table that holds the stops relation/edge.
+	StopsTable = "route_stops"
+	// StopsInverseTable is the table name for the RouteStop entity.
+	// It exists in this package in order to avoid circular dependency with the "routestop" package.
+	StopsInverseTable = "route_stops"
+	// StopsColumn is the table column denoting the stops relation/edge.
+	StopsColumn = "company_stops"
 	// TripsTable is the table that holds the trips relation/edge.
 	TripsTable = "trips"
 	// TripsInverseTable is the table name for the Trip entity.
@@ -138,7 +151,9 @@ var Columns = []string{
 	FieldCertificate,
 	FieldBankAccount,
 	FieldContactPerson,
+	FieldLogo,
 	FieldOnboardingStatus,
+	FieldOnboardingStage,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -164,6 +179,8 @@ var (
 	PhoneValidator func(string) error
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
+	// DefaultOnboardingStage holds the default value on creation for the "onboarding_stage" field.
+	DefaultOnboardingStage int8
 )
 
 // OnboardingStatus defines the type for the "onboarding_status" enum field.
@@ -231,9 +248,19 @@ func ByCertificate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCertificate, opts...).ToFunc()
 }
 
+// ByLogo orders the results by the logo field.
+func ByLogo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLogo, opts...).ToFunc()
+}
+
 // ByOnboardingStatus orders the results by the onboarding_status field.
 func ByOnboardingStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOnboardingStatus, opts...).ToFunc()
+}
+
+// ByOnboardingStage orders the results by the onboarding_stage field.
+func ByOnboardingStage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOnboardingStage, opts...).ToFunc()
 }
 
 // ByProfileCount orders the results by profile count.
@@ -289,6 +316,20 @@ func ByRoutesCount(opts ...sql.OrderTermOption) OrderOption {
 func ByRoutes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newRoutesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByStopsCount orders the results by stops count.
+func ByStopsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newStopsStep(), opts...)
+	}
+}
+
+// ByStops orders the results by stops terms.
+func ByStops(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStopsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -401,6 +442,13 @@ func newRoutesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RoutesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RoutesTable, RoutesColumn),
+	)
+}
+func newStopsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StopsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, StopsTable, StopsColumn),
 	)
 }
 func newTripsStep() *sqlgraph.Step {

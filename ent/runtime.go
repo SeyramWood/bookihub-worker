@@ -112,6 +112,10 @@ func init() {
 	companyDescEmail := companyFields[2].Descriptor()
 	// company.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	company.EmailValidator = companyDescEmail.Validators[0].(func(string) error)
+	// companyDescOnboardingStage is the schema descriptor for onboarding_stage field.
+	companyDescOnboardingStage := companyFields[8].Descriptor()
+	// company.DefaultOnboardingStage holds the default value on creation for the onboarding_stage field.
+	company.DefaultOnboardingStage = companyDescOnboardingStage.Default.(int8)
 	companyuserMixin := schema.CompanyUser{}.Mixin()
 	companyuserMixinFields0 := companyuserMixin[0].Fields()
 	_ = companyuserMixinFields0
@@ -406,7 +410,7 @@ func init() {
 	// route.ToLocationValidator is a validator for the "to_location" field. It is called by the builders before save.
 	route.ToLocationValidator = routeDescToLocation.Validators[0].(func(string) error)
 	// routeDescPopularity is the schema descriptor for popularity field.
-	routeDescPopularity := routeFields[6].Descriptor()
+	routeDescPopularity := routeFields[2].Descriptor()
 	// route.DefaultPopularity holds the default value on creation for the popularity field.
 	route.DefaultPopularity = routeDescPopularity.Default.(int)
 	routestopMixin := schema.RouteStop{}.Mixin()
@@ -439,10 +443,6 @@ func init() {
 	terminal.DefaultUpdatedAt = terminalDescUpdatedAt.Default.(func() time.Time)
 	// terminal.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	terminal.UpdateDefaultUpdatedAt = terminalDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// terminalDescName is the schema descriptor for name field.
-	terminalDescName := terminalFields[0].Descriptor()
-	// terminal.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	terminal.NameValidator = terminalDescName.Validators[0].(func(string) error)
 	transactionMixin := schema.Transaction{}.Mixin()
 	transactionMixinFields0 := transactionMixin[0].Fields()
 	_ = transactionMixinFields0

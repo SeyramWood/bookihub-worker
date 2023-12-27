@@ -35,8 +35,12 @@ type Company struct {
 	BankAccount *schema.BankAccount `json:"bank_account,omitempty"`
 	// ContactPerson holds the value of the "contact_person" field.
 	ContactPerson *schema.ContactPerson `json:"contact_person,omitempty"`
+	// Logo holds the value of the "logo" field.
+	Logo string `json:"logo,omitempty"`
 	// OnboardingStatus holds the value of the "onboarding_status" field.
 	OnboardingStatus company.OnboardingStatus `json:"onboarding_status,omitempty"`
+	// OnboardingStage holds the value of the "onboarding_stage" field.
+	OnboardingStage int8 `json:"onboarding_stage,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CompanyQuery when eager-loading is set.
 	Edges        CompanyEdges `json:"edges"`
@@ -53,6 +57,8 @@ type CompanyEdges struct {
 	Vehicles []*Vehicle `json:"vehicles,omitempty"`
 	// Routes holds the value of the routes edge.
 	Routes []*Route `json:"routes,omitempty"`
+	// Stops holds the value of the stops edge.
+	Stops []*RouteStop `json:"stops,omitempty"`
 	// Trips holds the value of the trips edge.
 	Trips []*Trip `json:"trips,omitempty"`
 	// Bookings holds the value of the bookings edge.
@@ -67,7 +73,7 @@ type CompanyEdges struct {
 	Notifications []*Notification `json:"notifications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [11]bool
 }
 
 // ProfileOrErr returns the Profile value or an error if the edge
@@ -106,10 +112,19 @@ func (e CompanyEdges) RoutesOrErr() ([]*Route, error) {
 	return nil, &NotLoadedError{edge: "routes"}
 }
 
+// StopsOrErr returns the Stops value or an error if the edge
+// was not loaded in eager-loading.
+func (e CompanyEdges) StopsOrErr() ([]*RouteStop, error) {
+	if e.loadedTypes[4] {
+		return e.Stops, nil
+	}
+	return nil, &NotLoadedError{edge: "stops"}
+}
+
 // TripsOrErr returns the Trips value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) TripsOrErr() ([]*Trip, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Trips, nil
 	}
 	return nil, &NotLoadedError{edge: "trips"}
@@ -118,7 +133,7 @@ func (e CompanyEdges) TripsOrErr() ([]*Trip, error) {
 // BookingsOrErr returns the Bookings value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) BookingsOrErr() ([]*Booking, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Bookings, nil
 	}
 	return nil, &NotLoadedError{edge: "bookings"}
@@ -127,7 +142,7 @@ func (e CompanyEdges) BookingsOrErr() ([]*Booking, error) {
 // IncidentsOrErr returns the Incidents value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) IncidentsOrErr() ([]*Incident, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Incidents, nil
 	}
 	return nil, &NotLoadedError{edge: "incidents"}
@@ -136,7 +151,7 @@ func (e CompanyEdges) IncidentsOrErr() ([]*Incident, error) {
 // ParcelsOrErr returns the Parcels value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) ParcelsOrErr() ([]*Parcel, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.Parcels, nil
 	}
 	return nil, &NotLoadedError{edge: "parcels"}
@@ -145,7 +160,7 @@ func (e CompanyEdges) ParcelsOrErr() ([]*Parcel, error) {
 // TransactionsOrErr returns the Transactions value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) TransactionsOrErr() ([]*Transaction, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.Transactions, nil
 	}
 	return nil, &NotLoadedError{edge: "transactions"}
@@ -154,7 +169,7 @@ func (e CompanyEdges) TransactionsOrErr() ([]*Transaction, error) {
 // NotificationsOrErr returns the Notifications value or an error if the edge
 // was not loaded in eager-loading.
 func (e CompanyEdges) NotificationsOrErr() ([]*Notification, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.Notifications, nil
 	}
 	return nil, &NotLoadedError{edge: "notifications"}
@@ -167,9 +182,9 @@ func (*Company) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case company.FieldBankAccount, company.FieldContactPerson:
 			values[i] = new([]byte)
-		case company.FieldID:
+		case company.FieldID, company.FieldOnboardingStage:
 			values[i] = new(sql.NullInt64)
-		case company.FieldName, company.FieldPhone, company.FieldEmail, company.FieldCertificate, company.FieldOnboardingStatus:
+		case company.FieldName, company.FieldPhone, company.FieldEmail, company.FieldCertificate, company.FieldLogo, company.FieldOnboardingStatus:
 			values[i] = new(sql.NullString)
 		case company.FieldCreatedAt, company.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -246,11 +261,23 @@ func (c *Company) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field contact_person: %w", err)
 				}
 			}
+		case company.FieldLogo:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field logo", values[i])
+			} else if value.Valid {
+				c.Logo = value.String
+			}
 		case company.FieldOnboardingStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field onboarding_status", values[i])
 			} else if value.Valid {
 				c.OnboardingStatus = company.OnboardingStatus(value.String)
+			}
+		case company.FieldOnboardingStage:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field onboarding_stage", values[i])
+			} else if value.Valid {
+				c.OnboardingStage = int8(value.Int64)
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
@@ -283,6 +310,11 @@ func (c *Company) QueryVehicles() *VehicleQuery {
 // QueryRoutes queries the "routes" edge of the Company entity.
 func (c *Company) QueryRoutes() *RouteQuery {
 	return NewCompanyClient(c.config).QueryRoutes(c)
+}
+
+// QueryStops queries the "stops" edge of the Company entity.
+func (c *Company) QueryStops() *RouteStopQuery {
+	return NewCompanyClient(c.config).QueryStops(c)
 }
 
 // QueryTrips queries the "trips" edge of the Company entity.
@@ -362,8 +394,14 @@ func (c *Company) String() string {
 	builder.WriteString("contact_person=")
 	builder.WriteString(fmt.Sprintf("%v", c.ContactPerson))
 	builder.WriteString(", ")
+	builder.WriteString("logo=")
+	builder.WriteString(c.Logo)
+	builder.WriteString(", ")
 	builder.WriteString("onboarding_status=")
 	builder.WriteString(fmt.Sprintf("%v", c.OnboardingStatus))
+	builder.WriteString(", ")
+	builder.WriteString("onboarding_stage=")
+	builder.WriteString(fmt.Sprintf("%v", c.OnboardingStage))
 	builder.WriteByte(')')
 	return builder.String()
 }

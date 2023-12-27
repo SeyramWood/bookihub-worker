@@ -43,7 +43,9 @@ func (Company) Fields() []ent.Field {
 		field.String("certificate").Optional(),
 		field.JSON("bank_account", &BankAccount{}).Optional(),
 		field.JSON("contact_person", &ContactPerson{}).Optional(),
+		field.String("logo").Optional(),
 		field.Enum("onboarding_status").Values("pending", "approved", "rejected").Default("pending"),
+		field.Int8("onboarding_stage").Default(0),
 	}
 }
 
@@ -57,6 +59,8 @@ func (Company) Edges() []ent.Edge {
 		edge.To("vehicles", Vehicle.Type).
 			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("routes", Route.Type).
+			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("stops", RouteStop.Type).
 			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("trips", Trip.Type).
 			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),

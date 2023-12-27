@@ -17,6 +17,7 @@ import (
 	"github.com/SeyramWood/bookibus/ent/notification"
 	"github.com/SeyramWood/bookibus/ent/parcel"
 	"github.com/SeyramWood/bookibus/ent/route"
+	"github.com/SeyramWood/bookibus/ent/routestop"
 	"github.com/SeyramWood/bookibus/ent/schema"
 	"github.com/SeyramWood/bookibus/ent/terminal"
 	"github.com/SeyramWood/bookibus/ent/transaction"
@@ -103,6 +104,20 @@ func (cc *CompanyCreate) SetContactPerson(sp *schema.ContactPerson) *CompanyCrea
 	return cc
 }
 
+// SetLogo sets the "logo" field.
+func (cc *CompanyCreate) SetLogo(s string) *CompanyCreate {
+	cc.mutation.SetLogo(s)
+	return cc
+}
+
+// SetNillableLogo sets the "logo" field if the given value is not nil.
+func (cc *CompanyCreate) SetNillableLogo(s *string) *CompanyCreate {
+	if s != nil {
+		cc.SetLogo(*s)
+	}
+	return cc
+}
+
 // SetOnboardingStatus sets the "onboarding_status" field.
 func (cc *CompanyCreate) SetOnboardingStatus(cs company.OnboardingStatus) *CompanyCreate {
 	cc.mutation.SetOnboardingStatus(cs)
@@ -113,6 +128,20 @@ func (cc *CompanyCreate) SetOnboardingStatus(cs company.OnboardingStatus) *Compa
 func (cc *CompanyCreate) SetNillableOnboardingStatus(cs *company.OnboardingStatus) *CompanyCreate {
 	if cs != nil {
 		cc.SetOnboardingStatus(*cs)
+	}
+	return cc
+}
+
+// SetOnboardingStage sets the "onboarding_stage" field.
+func (cc *CompanyCreate) SetOnboardingStage(i int8) *CompanyCreate {
+	cc.mutation.SetOnboardingStage(i)
+	return cc
+}
+
+// SetNillableOnboardingStage sets the "onboarding_stage" field if the given value is not nil.
+func (cc *CompanyCreate) SetNillableOnboardingStage(i *int8) *CompanyCreate {
+	if i != nil {
+		cc.SetOnboardingStage(*i)
 	}
 	return cc
 }
@@ -175,6 +204,21 @@ func (cc *CompanyCreate) AddRoutes(r ...*Route) *CompanyCreate {
 		ids[i] = r[i].ID
 	}
 	return cc.AddRouteIDs(ids...)
+}
+
+// AddStopIDs adds the "stops" edge to the RouteStop entity by IDs.
+func (cc *CompanyCreate) AddStopIDs(ids ...int) *CompanyCreate {
+	cc.mutation.AddStopIDs(ids...)
+	return cc
+}
+
+// AddStops adds the "stops" edges to the RouteStop entity.
+func (cc *CompanyCreate) AddStops(r ...*RouteStop) *CompanyCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cc.AddStopIDs(ids...)
 }
 
 // AddTripIDs adds the "trips" edge to the Trip entity by IDs.
@@ -314,6 +358,10 @@ func (cc *CompanyCreate) defaults() {
 		v := company.DefaultOnboardingStatus
 		cc.mutation.SetOnboardingStatus(v)
 	}
+	if _, ok := cc.mutation.OnboardingStage(); !ok {
+		v := company.DefaultOnboardingStage
+		cc.mutation.SetOnboardingStage(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -355,6 +403,9 @@ func (cc *CompanyCreate) check() error {
 		if err := company.OnboardingStatusValidator(v); err != nil {
 			return &ValidationError{Name: "onboarding_status", err: fmt.Errorf(`ent: validator failed for field "Company.onboarding_status": %w`, err)}
 		}
+	}
+	if _, ok := cc.mutation.OnboardingStage(); !ok {
+		return &ValidationError{Name: "onboarding_stage", err: errors.New(`ent: missing required field "Company.onboarding_stage"`)}
 	}
 	return nil
 }
@@ -414,9 +465,17 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec) {
 		_spec.SetField(company.FieldContactPerson, field.TypeJSON, value)
 		_node.ContactPerson = value
 	}
+	if value, ok := cc.mutation.Logo(); ok {
+		_spec.SetField(company.FieldLogo, field.TypeString, value)
+		_node.Logo = value
+	}
 	if value, ok := cc.mutation.OnboardingStatus(); ok {
 		_spec.SetField(company.FieldOnboardingStatus, field.TypeEnum, value)
 		_node.OnboardingStatus = value
+	}
+	if value, ok := cc.mutation.OnboardingStage(); ok {
+		_spec.SetField(company.FieldOnboardingStage, field.TypeInt8, value)
+		_node.OnboardingStage = value
 	}
 	if nodes := cc.mutation.ProfileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -475,6 +534,22 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(route.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.StopsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.StopsTable,
+			Columns: []string{company.StopsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(routestop.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
